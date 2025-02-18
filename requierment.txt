@@ -1,0 +1,4 @@
+mlflow
+streamlit
+numpy
+pandas
