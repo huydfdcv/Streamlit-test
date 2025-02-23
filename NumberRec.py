@@ -25,7 +25,6 @@ X_train, X_test, y_train, y_test = load_data()
 # Huấn luyện mô hình
 def train_model(model_name):
     with mlflow.start_run():
-        mlflow.set_tracking_uri('http://localhost:5000')
         if model_name == "Decision Tree":
             model = DecisionTreeClassifier()
         elif model_name == "SVM":
