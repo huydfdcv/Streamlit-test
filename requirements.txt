@@ -3,4 +3,3 @@ streamlit
 numpy
 pandas
 streamlit_drawable_canvas
-sklearn
