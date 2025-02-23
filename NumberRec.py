@@ -11,7 +11,6 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 from PIL import Image, ImageOps
-import cv2
 from streamlit_drawable_canvas import st_canvas
 
 # Load MNIST dataset
