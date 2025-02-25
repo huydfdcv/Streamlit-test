@@ -9,22 +9,24 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 
 # Tải dữ liệu Titanic
-@st.cache_data
 def load_data():
     url = "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
     df = pd.read_csv(url)
     st.write("10 dòng đầu của data trước khi xữ lý")
     st.write(df.head(10))   
     # Xóa các cột không cần thiết
-    df.drop(columns=['Name', 'Ticket', 'Cabin', 'PassengerId'], inplace=True)
+    drop_colum = st.multiselect("Chọn các cột để xóa",['Name', 'Ticket', 'Cabin', 'PassengerId','Pclass', 'Age', 'SibSp', 'Parch', 'Fare', 'Sex', 'Embarked'])
+    if st.button("Xóa các cột"):
+        df.drop(columns=drop_colum, inplace=True)
+        st.success("Đã xóa các cộtcột")
 
     # Điền giá trị thiếu
     df['Age'].fillna(df['Age'].median(), inplace=True)
     df['Embarked'].fillna(df['Embarked'].mode()[0], inplace=False)
 
     # One-hot encoding cho cột danh mục
-    df = pd.get_dummies(df, columns=['Sex'], drop_first=True)
-    df = pd.get_dummies(df, columns=['Embarked'], drop_first=False)
+    if 'sex' not in drop_colum : df = pd.get_dummies(df, columns=['Sex'], drop_first=True)
+    if 'Embarked' not in drop_colum : df = pd.get_dummies(df, columns=['Embarked'], drop_first=False)
 
     return df
 
@@ -37,8 +39,11 @@ X = df.drop(columns=['Survived'])
 y = df['Survived']
 
 # Chia tập dữ liệu thành Train (70%), Validation (15%) và Test (15%)
-X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.3, random_state=42)
-X_valid, X_test, y_valid, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
+test_size = st.slider("Chọn tỷ lệ test:", 0.1, 0.5, 0.2)
+valid_size = st.slider("Chọn tỷ lệ validation (trong tập test):", 0.1, 0.5, 0.2)
+if st.button("Chia dữ liệu"):
+    X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=test_size, random_state=42)
+    X_valid, X_test, y_valid, y_test = train_test_split(X_temp, y_temp, test_size=valid_size, random_state=42)
 
 # Chuẩn hóa dữ liệu
 scaler = StandardScaler()
@@ -118,6 +123,7 @@ if st.button("Huấn luyện mô hình"):
     model, valid_mse = train_model(model_type, degree)
     st.success(f"Huấn luyện thành công! MSE trên tập Validation: {valid_mse:.4f}")
 
+st.link_button(label= "MLflow",url = "http://127.0.0.1:5000/#/experiments/636393345947177791?viewStateShareKey=60b5838b3c07b10d688fd52b4dd6c37593b139dcfb12d21877e12fcb552682f6")
 # Dự đoán kết quả với dữ liệu người dùng nhập vào
 st.subheader("🔮 Dự đoán sống sót trên Titanic")
 
