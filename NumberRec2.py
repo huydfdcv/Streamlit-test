@@ -18,8 +18,6 @@ from streamlit_drawable_canvas import st_canvas
 MLFLOW_TRACKING_URI = "https://dagshub.com/huydfdcv/my-first-repo.mlflow"
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 mlflow.set_experiment("MNIST_Classification")
-os.environ["MLFLOW_TRACKING_USERNAME"] = "huydfdcv"
-os.environ["MLFLOW_TRACKING_PASSWORD"] = "c7c6bddfd4cca54d0c0b6fb70c7e45af45b22d91"
 
 st.title("MNIST Classification & Clustering with Streamlit & MLFlow")
 
