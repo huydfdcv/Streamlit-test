@@ -3,143 +3,135 @@ import pandas as pd
 import numpy as np
 import mlflow
 import mlflow.sklearn
+import os
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
+import joblib
+import tempfile
+import re
 
-# ========== 🚀 Tải dữ liệu ==========
+# Khởi tạo MLflow
+mlflow.set_experiment("Titanic_prediction")
+mlflow.set_tracking_uri("https://dagshub.com/huydfdcv/my-first-repo.mlflow")
+os.environ["MLFLOW_TRACKING_USERNAME"] = "huydfdcv"
+os.environ["MLFLOW_TRACKING_PASSWORD"] = "c7c6bddfd4cca54d0c0b6fb70c7e45af45b22d91"
+
+# ---- 🎯 Cài đặt giao diện ----
+st.set_page_config(page_title="Titanic Survival Prediction", layout="wide")
+st.title("🚢 Titanic Survival Prediction")
+st.write("Dự đoán khả năng sống sót của hành khách trên Titanic bằng Hồi quy tuyến tính.")
+
+# ---- 📌 Load dữ liệu ----
 @st.cache_data
 def load_data():
     url = "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
     df = pd.read_csv(url)
-    return df
+    return df.copy()
 
-df = load_data()
+if "df" not in st.session_state:
+    st.session_state["df"] = load_data()
 
-# ========== 📌 Tạo Tabs ==========
-tabs = st.tabs(["🏠 Giới thiệu", "📊 Xử lý dữ liệu", "🎯 Huấn luyện", "🔮 Dự đoán", "🔍 MLflow Tracking"])
+# ---- 🔄 Tiền xử lý dữ liệu ----
+st.subheader("1️⃣ Tiền xử lý dữ liệu")
+df = st.session_state["df"].copy()
+st.write("📌 **Dữ liệu gốc**:")
+st.write(df.head())
 
-# ========== 🏠 TAB 1: GIỚI THIỆU ==========
-with tabs[0]:
-    st.title("🚢 Titanic Survival Prediction")
-    st.write("🔍 Dự đoán khả năng sống sót của hành khách Titanic bằng hồi quy.")
+drop_columns = st.multiselect("🔧 Chọn các cột để xóa", df.columns.tolist())
 
-# ========== 📊 TAB 2: XỬ LÝ DỮ LIỆU ==========
-with tabs[1]:
-    st.subheader("📊 Xử lý dữ liệu")
-    
-    # Hiển thị dữ liệu gốc
-    st.write("📌 **10 dòng đầu tiên của dữ liệu:**")
-    st.write(df.head())
+if st.button("✅ Xác nhận xóa cột"):
+    df.drop(columns=drop_columns, inplace=True)
+    st.session_state["df"] = df.copy()
+    st.success(f"Đã xóa các cột: {', '.join(drop_columns)}")
 
-    # Chọn cột để xóa
-    df.drop(columns=['Name', 'PassengerId','Ticket', 'Cabin'], inplace=True)
-    drop_columns = st.multiselect("📌 **Chọn cột để xóa**", ['Pclass', 'Age', 'SibSp', 'Parch', 'Fare', 'Sex', 'Embarked'])
-    
-    # Xử lý dữ liệu
-    df_cleaned = df.copy() 
-    df_cleaned.drop(columns=drop_columns, inplace=True)
+# Xử lý cột Ticket: chỉ giữ lại số
+if 'Ticket' in df.columns:
+    df['Ticket'] = df['Ticket'].apply(lambda x: re.sub(r'\D', '', str(x)))
+    df['Ticket'] = pd.to_numeric(df['Ticket'], errors='coerce').fillna(0).astype(int)
 
-    # Điền giá trị thiếu
-    if 'Age' not in drop_columns:
-        df_cleaned['Age'].fillna(df_cleaned['Age'].median(), inplace=True)
-    if 'Embarked' not in drop_columns:
-        df_cleaned['Embarked'].fillna(df_cleaned['Embarked'].mode()[0], inplace=True)
+# Điền giá trị thiếu
+if 'Age' in df.columns:
+    df['Age'].fillna(df['Age'].median(), inplace=True)
+if 'Embarked' in df.columns:
+    df['Embarked'].fillna(df['Embarked'].mode()[0], inplace=True)
 
-    # One-hot encoding
-    if 'Sex' not in drop_columns:
-        df_cleaned = pd.get_dummies(df_cleaned, columns=['Sex'], drop_first=True)
-    if 'Embarked' not in drop_columns:
-        df_cleaned = pd.get_dummies(df_cleaned, columns=['Embarked'], drop_first=False)
+# One-Hot Encoding
+if 'Sex' in df.columns:
+    df = pd.get_dummies(df, columns=['Sex'], drop_first=True)
+if 'Embarked' in df.columns:
+    df = pd.get_dummies(df, columns=['Embarked'], drop_first=False)
 
-    # Hiển thị dữ liệu sau khi xử lý
-    st.write("📌 **Dữ liệu sau khi xử lý:**")
-    st.write(df_cleaned.head())
+st.session_state["df"] = df.copy()
+st.write("📌 **Dữ liệu sau xử lý**:")
+st.write(df.head())
 
-# ========== 🎯 TAB 3: HUẤN LUYỆN MÔ HÌNH ==========
-with tabs[2]:
-    st.subheader("🎯 Huấn luyện mô hình")
+# ---- 📊 Chia dữ liệu ----
+st.subheader("2️⃣ Chia dữ liệu")
+if "df" in st.session_state:
+    df = st.session_state["df"].copy()
+else:
+    st.error("⚠️ Vui lòng thực hiện tiền xử lý dữ liệu trước!")
+    st.stop()
 
-    # Chia dữ liệu
-    X = df_cleaned.drop(columns=['Survived'])
-    y = df_cleaned['Survived']
-    
-    test_size = st.slider("📌 Chọn tỷ lệ test:", 0.1, 0.5, 0.2)
-    valid_size = st.slider("📌 Chọn tỷ lệ validation:", 0.1, 0.5, 0.2)
+X = df.drop(columns=['Survived'])
+y = df['Survived']
 
+test_size = st.slider("📏 Chọn tỷ lệ tập test:", 0.1, 0.5, 0.2)
+valid_size = st.slider("📏 Chọn tỷ lệ tập validation:", 0.1, 0.5, 0.2)
+
+if st.button("🔀 Chia dữ liệu"):
     X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=test_size, random_state=42)
     X_valid, X_test, y_valid, y_test = train_test_split(X_temp, y_temp, test_size=valid_size, random_state=42)
+    st.session_state["X_train"], st.session_state["X_valid"], st.session_state["y_train"], st.session_state["y_valid"] = X_train, X_valid, y_train, y_valid
+    st.success("✅ Dữ liệu đã được chia thành công!")
 
-    # Chuẩn hóa dữ liệu
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_valid_scaled = scaler.transform(X_valid)
-    X_test_scaled = scaler.transform(X_test)
+# ---- 📉 Huấn luyện mô hình ----
+st.subheader("3️⃣ Huấn luyện mô hình")
+if "X_train" not in st.session_state:
+    st.error("⚠️ Vui lòng chia dữ liệu trước!")
+    st.stop()
 
-    # Chọn mô hình
-    model_type = st.radio("📌 **Chọn mô hình:**", ["Linear Regression", "Polynomial Regression"])
-    degree = st.slider("📌 Bậc của Polynomial Regression:", 2, 5, 2) if model_type == "Polynomial Regression" else 1
+X_train, X_valid, y_train, y_valid = st.session_state["X_train"], st.session_state["X_valid"], st.session_state["y_train"], st.session_state["y_valid"]
 
-    def train_model():
-        mlflow.set_experiment("Titanic_Regression")
-        with mlflow.start_run():
-            if model_type == "Polynomial Regression":
-                poly = PolynomialFeatures(degree=degree)
-                X_train_poly = poly.fit_transform(X_train_scaled)
-                X_valid_poly = poly.transform(X_valid_scaled)
-                model = LinearRegression()
-                model.fit(X_train_poly, y_train)
-                valid_pred = model.predict(X_valid_poly)
-            else:
-                model = LinearRegression()
-                model.fit(X_train_scaled, y_train)
-                valid_pred = model.predict(X_valid_scaled)
+# Chuẩn hóa dữ liệu
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_valid_scaled = scaler.transform(X_valid)
 
-            valid_mse = mean_squared_error(y_valid, valid_pred)
-            mlflow.log_param("model_type", model_type)
-            mlflow.log_metric("validation_mse", valid_mse)
-            mlflow.sklearn.log_model(model, "regression_model")
+model_type = st.radio("📌 Chọn mô hình:", ["Linear Regression", "Polynomial Regression"])
+if st.button("✅ Xác nhận mô hình"):
+    st.session_state["model_type"] = model_type
+    st.success(f"Mô hình đã chọn: {model_type}")
 
-            return model, valid_mse
-
-    if st.button("🚀 Huấn luyện mô hình"):
-        model, valid_mse = train_model()
-        st.success(f"✅ Huấn luyện thành công! MSE trên tập Validation: {valid_mse:.4f}")
-
-# ========== 🔮 TAB 4: DỰ ĐOÁN ==========
-with tabs[3]:
-    st.subheader("🔮 Dự đoán sống sót trên Titanic")
-
-    # Nhập dữ liệu
-    input_data = {
-        'Pclass': st.selectbox("📌 Hạng vé", [1, 2, 3]),
-        'Age': st.slider("📌 Tuổi", 1, 100, 30),
-        'SibSp': st.slider("📌 Số anh chị em / vợ chồng", 0, 8, 0),
-        'Parch': st.slider("📌 Số cha mẹ / con", 0, 6, 0),
-        'Fare': st.slider("📌 Giá vé", 0, 500, 50),
-        'Sex_male': 1 if st.radio("📌 Giới tính", ["Nam", "Nữ"]) == "Nam" else 0,
-        'Embarked_C': 0, 'Embarked_Q': 0, 'Embarked_S': 0
-    }
+if "model_type" in st.session_state:
+    degree = 2
+    if st.session_state["model_type"] == "Polynomial Regression":
+        degree = st.slider("🔢 Chọn bậc của Polynomial Regression:", 2, 5, 2)
     
-    # Xử lý nơi lên tàu
-    embarked = st.radio("📌 Nơi lên tàu", ["C", "Q", "S"])
-    input_data[f'Embarked_{embarked}'] = 1
+    with mlflow.start_run():
+        if st.session_state["model_type"] == "Polynomial Regression":
+            poly = PolynomialFeatures(degree=degree)
+            X_train_poly = poly.fit_transform(X_train_scaled)
+            X_valid_poly = poly.transform(X_valid_scaled)
+            model = LinearRegression()
+            model.fit(X_train_poly, y_train)
+        else:
+            model = LinearRegression()
+            model.fit(X_train_scaled, y_train)
+        
+        mlflow.sklearn.log_model(model, artifact_path="models")
+        st.success("✅ Huấn luyện mô hình thành công!")
 
-    # Chuyển đổi thành DataFrame
-    input_df = pd.DataFrame([input_data])
+# ---- 🔮 Dự đoán ----
+st.subheader("4️⃣ Dự đoán")
+model_uri = "models:/regression_model/latest"
+model = mlflow.sklearn.load_model(model_uri)
 
-    # Chuẩn hóa dữ liệu
-    input_scaled = scaler.transform(input_df)
+st.write("📥 Nhập dữ liệu hành khách:")
+input_data = {col: st.number_input(f"{col}", value=0.0) for col in X.columns}
+input_df = pd.DataFrame([input_data])
+prediction = model.predict(input_df)
 
-    if st.button("🔮 Dự đoán"):
-        model, _ = train_model()
-        prediction = model.predict(input_scaled)
-        st.write(f"🔮 **Xác suất sống sót: {prediction[0]:.2f}**")
-        st.success("✅ Sống sót!") if prediction[0] > 0.5 else st.error("❌ Không sống sót.")
-
-# ========== 🔍 TAB 5: MLflow Tracking ==========
-with tabs[4]:
-    st.subheader("🔍 MLflow Tracking")
-    st.markdown("👉 **Nhấn vào đây để xem chi tiết:**")
-    st.link_button(label="📌 Mở MLflow", url="http://127.0.0.1:5000/#/experiments/")
+st.write(f"🔮 **Dự đoán xác suất sống sót: {prediction[0]:.4f}**")
