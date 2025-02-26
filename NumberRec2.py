@@ -15,10 +15,13 @@ from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 
 # Cấu hình MLflow
-MLFLOW_TRACKING_URI = "https://dagshub.com/huydfdcv/my-first-repo.mlflow"
-mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+mlflow.set_tracking_uri("https://dagshub.com/huydfdcv/my-first-repo.mlflow")
 mlflow.set_experiment("MNIST_Classification")
 
+mlflow.login(
+    username=st.secrets["MLFLOW_TRACKING_USERNAME"],
+    password=st.secrets["MLFLOW_TRACKING_PASSWORD"]
+)
 st.title("MNIST Classification & Clustering with Streamlit & MLFlow")
 
 # 1. Thu thập dữ liệu
