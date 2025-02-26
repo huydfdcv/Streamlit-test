@@ -14,10 +14,13 @@ from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 from sklearn.cluster import KMeans, DBSCAN
 from sklearn.decomposition import PCA
-
 # Cấu hình MLflow
-MLFLOW_TRACKING_URI = "https://dagshub.com/huydfdcv/my-first-repo.mlflow/"  # Thay bằng URL của MLflow server nếu chạy từ xa
-mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+import dagshub
+dagshub.init(repo_owner='huydfdcv',
+             repo_name='my-first-repo',
+             mlflow=True)
+
+ # Thay bằng URL của MLflow server nếu chạy từ xa
 mlflow.set_experiment("MNIST_Classification")
 
 st.title("MNIST Classification & Clustering with Streamlit & MLFlow")
