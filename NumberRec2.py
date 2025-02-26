@@ -11,13 +11,12 @@ from sklearn.metrics import accuracy_score
 from mlflow.models import infer_signature
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
-import os
+
 # Cấu hình MLflow
 MLFLOW_TRACKING_URI = "https://dagshub.com/huydfdcv/my-first-repo.mlflow"
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 mlflow.set_experiment("MNIST_Classification")
-os.environ["MLFLOW_TRACKING_USERNAME"] = "MLFLOW_TRACKING_USERNAME"
-os.environ["MLFLOW_TRACKING_PASSWORD"] = "MLFLOW_TRACKING_PASSWORD"
+
 
 st.title("MNIST Classification & Clustering with Streamlit & MLFlow")
 
