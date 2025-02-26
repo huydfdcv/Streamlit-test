@@ -1,5 +1,4 @@
 mlflow
 numpy
 pandas
-streamlit_drawable_canvas
-os
+streamlit-drawable-canvas==0.9.3
