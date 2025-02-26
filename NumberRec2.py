@@ -18,7 +18,8 @@ from streamlit_drawable_canvas import st_canvas
 MLFLOW_TRACKING_URI = "https://dagshub.com/huydfdcv/my-first-repo.mlflow"
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 mlflow.set_experiment("MNIST_Classification")
-client = MlflowClient()
+os.environ["MLFLOW_TRACKING_USERNAME"] = "huydfdcv"
+os.environ["MLFLOW_TRACKING_PASSWORD"] = "c7c6bddfd4cca54d0c0b6fb70c7e45af45b22d91"
 
 st.title("MNIST Classification & Clustering with Streamlit & MLFlow")
 
@@ -38,37 +39,24 @@ st.header("✂️ Chia dữ liệu")
 test_size = st.slider("Chọn tỉ lệ tập kiểm tra:", 0.1, 0.5, 0.2, step=0.05)
 if st.button("Xác nhận tỉ lệ và chia dữ liệu"):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
-    with mlflow.start_run():
-        np.save("X_train.npy", X_train)
-        np.save("X_test.npy", X_test)
-        np.save("y_train.npy", y_train)
-        np.save("y_test.npy", y_test)
-        mlflow.log_artifact("X_train.npy")
-        mlflow.log_artifact("X_test.npy")
-        mlflow.log_artifact("y_train.npy")
-        mlflow.log_artifact("y_test.npy")
-    st.success(f"✅ Dữ liệu đã được chia: {len(X_train)} mẫu huấn luyện, {len(X_test)} mẫu kiểm tra và lưu lên MLflow!")
+    st.session_state["X_train"] = X_train
+    st.session_state["X_test"] = X_test
+    st.session_state["y_train"] = y_train
+    st.session_state["y_test"] = y_test
+    st.success(f"✅ Dữ liệu đã được chia: {len(X_train)} mẫu huấn luyện, {len(X_test)} mẫu kiểm tra!")
 
-# 3. Tải dữ liệu từ MLflow
-def load_data_from_mlflow():
-    experiment = client.get_experiment_by_name("MNIST_Classification")
-    runs = client.search_runs(experiment.experiment_id, order_by=["start_time DESC"], max_results=1)
-    if not runs:
-        st.error("Không tìm thấy dữ liệu trên MLflow. Hãy chia dữ liệu trước.")
-        return None, None, None, None
-    run_id = runs[0].info.run_id
-    client.download_artifacts(run_id, "X_train.npy", ".")
-    client.download_artifacts(run_id, "X_test.npy", ".")
-    client.download_artifacts(run_id, "y_train.npy", ".")
-    client.download_artifacts(run_id, "y_test.npy", ".")
-    return np.load("X_train.npy"), np.load("X_test.npy"), np.load("y_train.npy"), np.load("y_test.npy")
-
-# 4. Chọn mô hình để huấn luyện
+# 3. Chọn mô hình để huấn luyện
 st.header("🎯 Chọn mô hình để huấn luyện")
 def train_model(model_name):
-    X_train, X_test, y_train, y_test = load_data_from_mlflow()
-    if X_train is None:
+    if "X_train" not in st.session_state:
+        st.error("⚠️ Vui lòng chia dữ liệu trước khi huấn luyện mô hình!")
         return None, None
+    
+    X_train = st.session_state["X_train"]
+    X_test = st.session_state["X_test"]
+    y_train = st.session_state["y_train"]
+    y_test = st.session_state["y_test"]
+    
     with mlflow.start_run():
         model = DecisionTreeClassifier() if model_name == "Decision Tree" else SVC()
         model.fit(X_train, y_train)
@@ -92,7 +80,7 @@ model_choice = st.selectbox("Chọn mô hình phân loại:", ["Decision Tree", 
 if st.button("Tải hoặc Huấn luyện mô hình"):
     model = load_or_train_model(model_choice)
 
-# 5. Dự đoán & Đánh giá
+# 4. Dự đoán & Đánh giá
 st.header("🔍 Dự đoán & Đánh giá")
 st.subheader("Vẽ số hoặc tải ảnh để dự đoán")
 try:
