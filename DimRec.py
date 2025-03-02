@@ -1,8 +1,6 @@
 import streamlit as st
 import mlflow
 import mlflow.sklearn
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
@@ -13,18 +11,19 @@ import os
 
 # Cấu hình MLflow với DagsHub
 mlflow_tracking_uri = st.secrets["MLFLOW_TRACKING_URI"]  # Đọc từ Streamlit Secrets
-mlflow_token = st.secrets["MLFLOW_TRACKING_TOKEN"]  # Đọc từ Streamlit Secrets
 
-# Thiết lập xác thực với DagsHub bằng Token
-os.environ["MLFLOW_TRACKING_URI"] = mlflow_tracking_uri
-os.environ["MLFLOW_TRACKING_TOKEN"] = mlflow_token
-
-mlflow.set_tracking_uri(mlflow_tracking_uri)
-mlflow.set_experiment("MNIST_Classification")
 client = MlflowClient()
 
 st.title("MNIST Dimensionality Reduction with Streamlit & MLFlow")
+    
+DAGSHUB_MLFLOW_URI = "https://dagshub.com/huydfdcv/my-first-repo.mlflow"
+st.session_state['mlflow_url']=DAGSHUB_MLFLOW_URI
+mlflow.set_tracking_uri(DAGSHUB_MLFLOW_URI)
 
+os.environ["MLFLOW_TRACKING_USERNAME"] = "huydfdcv"
+os.environ["MLFLOW_TRACKING_PASSWORD"] = "2CaXhRNYabm9fN3"
+
+mlflow.set_experiment("Dimention Reduction")  
 # 1. Thu thập dữ liệu
 st.header("📥 Thu thập dữ liệu")
 @st.cache_data
