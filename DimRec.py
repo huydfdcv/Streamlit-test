@@ -66,6 +66,7 @@ if st.button("Thực hiện giảm chiều"):
             X_reduced = reducer.fit_transform(X_sample)
             mlflow.log_param("reduction_method", reduction_method)
             mlflow.log_param("n_components", n_components)
+            mlflow.log_artifact("X_reduced", X_reduced)
             st.success(f"✅ Giảm chiều dữ liệu thành công với {reduction_method}!")
             if(n_components != 2): st.warning("plot chỉ có thể trình bày với số chiều bằng 2, nếu nhiều hơn sẽ bị lỗi")
             fig, ax = plt.subplots()
