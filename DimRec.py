@@ -24,8 +24,10 @@ os.environ["MLFLOW_TRACKING_USERNAME"] = "huydfdcv"
 os.environ["MLFLOW_TRACKING_PASSWORD"] = "2CaXhRNYabm9fN3"
 
 mlflow.set_experiment("Dimention Reduction")  
+
 # 1. Thu thập dữ liệu
 st.header("📥 Thu thập dữ liệu")
+st.link_button("Link MLflow", mlflow_tracking_uri)
 @st.cache_data
 def load_data():
     mnist = fetch_openml('mnist_784', version=1, as_frame=False)
@@ -65,6 +67,7 @@ if st.button("Thực hiện giảm chiều"):
             mlflow.log_param("reduction_method", reduction_method)
             mlflow.log_param("n_components", n_components)
             st.success(f"✅ Giảm chiều dữ liệu thành công với {reduction_method}!")
+            if(n_components != 2): st.warning("plot chỉ có thể trình bày với số chiều bằng 2, nếu nhiều hơn sẽ bị lỗi")
             fig, ax = plt.subplots()
             scatter = ax.scatter(X_reduced[:, 0], X_reduced[:, 1], c=y_sample, cmap='tab10', alpha=0.5)
             ax.legend(*scatter.legend_elements(), title="Nhóm")
