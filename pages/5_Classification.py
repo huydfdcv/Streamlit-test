@@ -112,7 +112,7 @@ def main():
                 X_train, X_test, y_train, y_test = split_data(X,y, test_size)
                 st.write(f"Dữ liệu đã được chia (test size = {test_size}).")
 
-            if st.session_state.get('X_train') is not None:
+            if X_train is not None:
                 # Bước 4: Chọn mô hình và huấn luyện
                 st.write("""
                     Huấn luyện và đánh giá mô hình:
