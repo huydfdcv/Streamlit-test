@@ -20,6 +20,7 @@ mlflow.set_experiment("MNIST Classification")  # Đặt tên experiment
 os.environ["MLFLOW_TRACKING_USERNAME"] = "huydfdcv"
 os.environ["MLFLOW_TRACKING_PASSWORD"] = "2CaXhRNYabm9fN3"
 
+trained = False 
 # Load dataset MNIST
 @st.cache_data
 def load_data():
@@ -111,8 +112,8 @@ def main():
             if st.button("3. Chia dữ liệu"):
                 X_train, X_test, y_train, y_test = split_data(X,y, test_size)
                 st.write(f"Dữ liệu đã được chia (test size = {test_size}).")
-
-            if X_train is not None:
+                trained = True
+            if trained:
                 # Bước 4: Chọn mô hình và huấn luyện
                 st.write("""
                     Huấn luyện và đánh giá mô hình:
