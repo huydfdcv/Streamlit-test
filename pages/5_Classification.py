@@ -88,12 +88,12 @@ def main():
 
     if st.session_state.get('data_loaded', False):
         X, y = load_data()
-        X, y = preprocess_data(X, y)
         st.session_state['X'] = X
         st.session_state['y'] = y
 
         # Bước 2: Xử lý dữ liệu
         if st.button("2. Xử lý dữ liệu"):
+            X, y = preprocess_data(X, y)
             st.write("""
             Xử lý dữ liệu:
             - Chuẩn hóa giá trị pixel về khoảng [0, 1] bằng cách chia cho 255.
