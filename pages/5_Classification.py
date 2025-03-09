@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import os
 from PIL import Image
-import psutil
+
 
 # Thiết lập MLflow tracking URI và thông tin xác thực
 DAGSHUB_MLFLOW_URI = "https://dagshub.com/huydfdcv/my-first-repo.mlflow"
@@ -22,7 +22,6 @@ os.environ["MLFLOW_TRACKING_USERNAME"] = "huydfdcv"
 os.environ["MLFLOW_TRACKING_PASSWORD"] = "2CaXhRNYabm9fN3"
 
 # Load dataset MNIST (chỉ sử dụng 10.000 mẫu)
-@st.cache_data(max_entries=2)
 def load_data():
     st.write("Đang tải dữ liệu...")
     mnist = fetch_openml('mnist_784', version=1)
@@ -30,7 +29,6 @@ def load_data():
     return mnist.data[:10000], mnist.target[:10000]  # Giới hạn dữ liệu
 
 # Preprocess data
-@st.cache_data(max_entries=2)
 def preprocess_data(X, y):
     st.write("Đang xử lý dữ liệu...")
     X = X / 255.0  # Chuẩn hóa dữ liệu về [0, 1]
