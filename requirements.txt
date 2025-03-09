@@ -3,3 +3,4 @@ numpy
 pandas
 streamlit-drawable-canvas==0.9.3
 plotly
+seaborn
