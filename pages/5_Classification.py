@@ -100,7 +100,6 @@ def main():
             - Chuyển đổi nhãn thành số nguyên.
             """)
             st.session_state['data_preprocessed'] = True
-            st.write("Dữ liệu đã được xử lý (chuẩn hóa).")
 
         if st.session_state.get('data_preprocessed', False):
             # Bước 3: Chia dữ liệu
