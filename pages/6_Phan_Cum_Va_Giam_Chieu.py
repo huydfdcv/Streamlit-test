@@ -24,7 +24,6 @@ os.environ["MLFLOW_TRACKING_USERNAME"] = "huydfdcv"
 os.environ["MLFLOW_TRACKING_PASSWORD"] = "2CaXhRNYabm9fN3"
 
 # Tải dữ liệu MNIST
-@st.cache_data
 def load_data():
     """
     Tải tập dữ liệu MNIST từ OpenML.
