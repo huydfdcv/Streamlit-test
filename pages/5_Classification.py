@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import os
 from PIL import Image
+import psutil
 
 # Thiết lập MLflow tracking URI và thông tin xác thực
 DAGSHUB_MLFLOW_URI = "https://dagshub.com/huydfdcv/my-first-repo.mlflow"
@@ -20,17 +21,21 @@ mlflow.set_experiment("MNIST Classification")  # Đặt tên experiment
 os.environ["MLFLOW_TRACKING_USERNAME"] = "huydfdcv"
 os.environ["MLFLOW_TRACKING_PASSWORD"] = "2CaXhRNYabm9fN3"
 
-# Load dataset MNIST
-@st.cache_data
+# Load dataset MNIST (chỉ sử dụng 10.000 mẫu)
+@st.cache_data(max_entries=2)
 def load_data():
+    st.write("Đang tải dữ liệu...")
     mnist = fetch_openml('mnist_784', version=1)
-    return mnist.data, mnist.target
+    st.write("Dữ liệu đã được tải.")
+    return mnist.data[:10000], mnist.target[:10000]  # Giới hạn dữ liệu
 
 # Preprocess data
-@st.cache_data
+@st.cache_data(max_entries=2)
 def preprocess_data(X, y):
+    st.write("Đang xử lý dữ liệu...")
     X = X / 255.0  # Chuẩn hóa dữ liệu về [0, 1]
     y = y.astype(int)  # Chuyển đổi nhãn thành số nguyên
+    st.write("Dữ liệu đã được xử lý.")
     return X, y
 
 # Split data
@@ -41,23 +46,21 @@ def split_data(X, y, test_size):
 
 # Hiển thị báo cáo phân loại dưới dạng bảng
 def display_classification_report(y_test, y_pred):
-    """
-    Hiển thị báo cáo phân loại dưới dạng bảng.
-    """
     report = classification_report(y_test, y_pred, output_dict=True)
     report_df = pd.DataFrame(report).transpose()
     st.write("### Báo cáo phân loại")
-    st.dataframe(report_df.style.format("{:.2f}"))  # Hiển thị bảng với định dạng số thập phân
+    st.dataframe(report_df.style.format("{:.2f}"))
 
 # Train and evaluate model
 def train_and_evaluate(model, X_train, X_test, y_train, y_test, model_name):
     with mlflow.start_run():
+        st.write(f"Đang huấn luyện mô hình {model_name}...")
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
         accuracy = accuracy_score(y_test, y_pred)
         st.write(f"Độ chính xác của mô hình {model_name}: {accuracy:.2f}")
         
-        # Hiển thị báo cáo phân loại dưới dạng bảng
+        # Hiển thị báo cáo phân loại
         display_classification_report(y_test, y_pred)
         
         # Log metrics and model
@@ -130,9 +133,9 @@ def main():
                 model_name = st.selectbox("Chọn mô hình", ["Decision Tree", "SVM"])
                 if st.button("Huấn luyện mô hình"):
                     if model_name == "Decision Tree":
-                        model = DecisionTreeClassifier(random_state=42)
+                        model = DecisionTreeClassifier(max_depth=10, random_state=42)  # Giới hạn độ sâu
                     elif model_name == "SVM":
-                        model = SVC(kernel='linear', random_state=42)
+                        model = SVC(kernel='linear', random_state=42)  # Sử dụng kernel đơn giản
                     train_and_evaluate(model, st.session_state['X_train'], st.session_state['X_test'], st.session_state['y_train'], st.session_state['y_test'], model_name)
                     st.write("Mô hình đã được huấn luyện và log lên MLflow!")
 
