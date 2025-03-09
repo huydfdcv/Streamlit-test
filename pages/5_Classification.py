@@ -120,13 +120,13 @@ def main():
 
             if st.session_state.get('X_train') is not None:
                 # Bước 4: Chọn mô hình và huấn luyện
+                st.write("### 4. Chọn mô hình và huấn luyện")
                 st.write("""
                     Huấn luyện và đánh giá mô hình:
                     - Huấn luyện mô hình trên tập huấn luyện.
                     - Đánh giá mô hình trên tập kiểm tra.
                     - Log độ chính xác và mô hình lên MLflow.
                     """)
-                st.write("### 4. Chọn mô hình và huấn luyện")
                 model_name = st.selectbox("Chọn mô hình", ["Decision Tree", "SVM"])
                 if st.button("Huấn luyện mô hình"):
                     if model_name == "Decision Tree":
