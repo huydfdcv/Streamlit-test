@@ -20,7 +20,7 @@ mlflow.set_experiment("MNIST Classification")  # Đặt tên experiment
 os.environ["MLFLOW_TRACKING_USERNAME"] = "huydfdcv"
 os.environ["MLFLOW_TRACKING_PASSWORD"] = "2CaXhRNYabm9fN3"
 
-trained = False 
+
 # Load dataset MNIST
 @st.cache_data
 def load_data():
@@ -68,6 +68,7 @@ def train_and_evaluate(model, X_train, X_test, y_train, y_test, model_name):
 
 # Streamlit app
 def main():
+    trained = False 
     st.title("MNIST Classification with Streamlit & MLflow (DagsHub)")
     
     # Nút link đến DagsHub
