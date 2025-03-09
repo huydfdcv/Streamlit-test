@@ -88,8 +88,6 @@ def main():
     if st.session_state.get('data_loaded', False):
         X, y = load_data()
         X, y = preprocess_data(X, y)
-        st.session_state['X'] = X
-        st.session_state['y'] = y
 
         # Bước 2: Xử lý dữ liệu
         if st.button("2. Xử lý dữ liệu"):
@@ -111,11 +109,7 @@ def main():
             )
             test_size = st.slider("Chọn tỉ lệ test/train", 0.1, 0.5, 0.2)
             if st.button("3. Chia dữ liệu"):
-                X_train, X_test, y_train, y_test = split_data(st.session_state['X'], st.session_state['y'], test_size)
-                st.session_state['X_train'] = X_train
-                st.session_state['X_test'] = X_test
-                st.session_state['y_train'] = y_train
-                st.session_state['y_test'] = y_test
+                X_train, X_test, y_train, y_test = split_data(X,y, test_size)
                 st.write(f"Dữ liệu đã được chia (test size = {test_size}).")
 
             if st.session_state.get('X_train') is not None:
@@ -133,7 +127,7 @@ def main():
                         model = DecisionTreeClassifier(random_state=42)
                     elif model_name == "SVM":
                         model = SVC(kernel='linear', random_state=42)
-                    train_and_evaluate(model, st.session_state['X_train'], st.session_state['X_test'], st.session_state['y_train'], st.session_state['y_test'], model_name)
+                    train_and_evaluate(model,X_train,X_test,y_train,y_test, model_name)
                     st.write("Mô hình đã được huấn luyện và log lên MLflow!")
 
                 # Bước 5: Demo với ảnh tải lên
