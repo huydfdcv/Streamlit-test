@@ -9,8 +9,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
+import openml
 import os
-import time
 
 # ==================== CẤU HÌNH MLFLOW ====================
 DAGSHUB_MLFLOW_URI = "https://dagshub.com/huydfdcv/my-first-repo.mlflow"
@@ -19,7 +19,16 @@ os.environ["MLFLOW_TRACKING_PASSWORD"] = "2CaXhRNYabm9fN3"
 mlflow.set_tracking_uri(DAGSHUB_MLFLOW_URI)
 mlflow.set_experiment("MNIST NeuralNetwork")
 
-# ==================== HÀM VÀ TIỆN ÍCH ====================
+# ==================== HÀM TẢI DỮ LIỆU ====================
+@st.cache_data
+def load_mnist():
+    dataset = openml.datasets.get_dataset(554)
+    X, y, _, _ = dataset.get_data(target=dataset.default_target_attribute)
+    X = X.values.reshape(-1, 28, 28).astype('float32') / 255.0
+    y = y.astype('int32')
+    return X, y
+
+# ==================== HÀM TẠO MODEL ====================
 @st.cache_resource
 def create_model(layer_sizes):
     model = models.Sequential()
@@ -34,9 +43,7 @@ def main():
     st.title("🎨 MNIST Neural Network Trainer")
     
     # Tải dữ liệu
-    data = np.load("mnist_data.npz")
-    X, y = data['X'], data['y']
-    X = X.reshape(-1, 28, 28) if X.shape[1] == 784 else X
+    X, y = load_mnist()
 
     # ==================== TABS CHÍNH ====================
     tab1, tab2, tab3 = st.tabs(["🏋️ Huấn luyện", "📜 Lịch sử", "🎮 Demo"])
@@ -106,22 +113,20 @@ def main():
                         'metrics.accuracy': 'Độ chính xác'
                     }),
                 height=500,
-                use_container_width=True  # Sửa thành use_container_width
+                use_container_width=True
             )
         except Exception as e:
             st.error(f"⚠️ Lỗi khi tải dữ liệu: {e}")
 
     with tab3:
         st.header("Demo Nhận dạng Chữ số")
-        st.write("Nếu trang vẽ không xuất hiện lần đầu tiên thì nếu reload lại trang thì nó có thể xuất hiện lạilại")
+        
         try:
-            # Phần chọn run đầu tiên
             runs = mlflow.search_runs()
             run_names = runs['tags.mlflow.runName'].tolist()
             selected_run = st.selectbox("Chọn Model để Demo", run_names)
             
             if selected_run:
-                # Tạo canvas
                 canvas_result = st_canvas(
                     fill_color="rgba(0, 0, 0, 1)",
                     stroke_width=20,
@@ -133,21 +138,17 @@ def main():
                     key="canvas"
                 )
                 
-                # Nút dự đoán
                 if st.button("🔮 Dự đoán", type="primary"):
-                    # Xử lý ảnh
                     if canvas_result.image_data is not None:
                         img = Image.fromarray(canvas_result.image_data.astype('uint8'))
                         img = img.resize((28, 28)).convert('L')
                         img_array = np.array(img) / 255.0
                         img_array = 1 - img_array  # Đảo ngược màu
                         
-                        # Load model và dự đoán
                         run_id = runs[runs['tags.mlflow.runName'] == selected_run]['run_id'].iloc[0]
                         model = mlflow.keras.load_model(f"runs:/{run_id}/model")
                         prediction = model.predict(img_array.reshape(1, 28, 28))
                         
-                        # Hiển thị kết quả
                         col1, col2 = st.columns(2)
                         with col1:
                             st.image(img_array, width=150, caption="Ảnh đã xử lý")
@@ -156,8 +157,7 @@ def main():
                             st.metric("Độ tin cậy", f"{np.max(prediction)*100:.2f}%")
                             st.bar_chart(prediction[0], height=200)
         except Exception as e:
-            st.warning("Chưa có model nào được huấn luyện hoặc có lỗi xảy ra!")
+            st.warning("Chưa có model nào được huấn luyện!")
 
 if __name__ == "__main__":
     main()
-    
