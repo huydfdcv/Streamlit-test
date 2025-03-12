@@ -41,7 +41,8 @@ def create_model(layer_sizes):
 # ==================== GIAO DIỆN CHÍNH ====================
 def main():
     st.title("🎨 MNIST Neural Network Trainer")
-    
+    st.write("Phần canvas có thể không xuất hiên, nếu không xuất hiện thì hãy reload lại trang thì lỗi đó sẽ được xửa")
+    st.write("Bài từ tuần trước vẫn bị lỗi nên tạm thời chưa đăng lên github")
     # Tải dữ liệu
     X, y = load_mnist()
 
