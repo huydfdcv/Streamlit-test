@@ -5,13 +5,7 @@ import mlflow
 import os
 import time
 from datetime import datetime
-from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import Callback
 import plotly.express as px
 
 # ======================================
@@ -34,7 +28,7 @@ def data():
       """)
 
     st.subheader("Một số hình ảnh từ MNIST Dataset")
-    # st.image("buoi4/img3.png", caption="Một số hình ảnh từ MNIST Dataset", use_container_width ="auto")
+    st.image("img3.png", caption="Một số hình ảnh từ MNIST Dataset", use_container_width ="auto")
 
     st.subheader("Ứng dụng thực tế của MNIST")
     st.write("""
@@ -54,7 +48,7 @@ def data():
       - **Convolutional Neural Networks (CNNs)**
     """)
 
-    st.subheader("📊 Minh họa dữ liệu MNIST")
+    # st.subheader("📊 Minh họa dữ liệu MNIST")
 
     # Đọc và hiển thị ảnh GIF minh họa
     # gif_path = "buoi7/g1.gif"  # Thay bằng đường dẫn thực tế
@@ -100,19 +94,19 @@ def explain_Pseudo_Labelling():
     # Ví dụ minh họa
     st.markdown("## 🔍 Ví dụ về Pseudo Labelling")
     st.write("""
-    Giả sử ta có 10.000 ảnh chữ số viết tay (0-9), nhưng chỉ có 1% (100 ảnh) được gán nhãn ban đầu.  
-    → Còn lại 9.900 ảnh không nhãn.
+    Giả sử ta có 70.000 ảnh chữ số viết tay (0-9), nhưng chỉ có 1% (100 ảnh) với mỗi số được gán nhãn ban đầu.  
+    → Còn lại 60.000 ảnh không nhãn.
     """)
 
     st.markdown("### 🏁 **Bước 1: Huấn luyện mô hình ban đầu**")
     st.write("""
-    - Mô hình được train trên 100 ảnh có nhãn.  
+    - Mô hình được train trên 1000 ảnh có nhãn.  
     - Do dữ liệu ít, mô hình có độ chính xác thấp.  
     """)
 
     st.markdown("### 🧠 **Bước 2: Dự đoán nhãn cho dữ liệu chưa gán nhãn**")
     st.write("""
-    - Chạy mô hình trên 9.900 ảnh chưa gán nhãn.  
+    - Chạy mô hình trên 60.000 ảnh chưa gán nhãn.  
     - Dự đoán và tính xác suất cho mỗi ảnh.  
     """)
     
@@ -121,8 +115,8 @@ def explain_Pseudo_Labelling():
     st.markdown("### 🔬 **Bước 3: Lọc dữ liệu có độ tin cậy cao**")
     st.write("""
     - Chỉ chọn những ảnh có xác suất dự đoán cao hơn ngưỡng tin cậy (ví dụ: 0.95).  
-    -Ảnh 1, 3, 5 sẽ được gán nhãn giả.
-    -Ảnh 2, 4 bị bỏ qua vì mô hình không tự tin.
+    - Ảnh 1, 3, 5 sẽ được gán nhãn giả.
+    - Ảnh 2, 4 bị bỏ qua vì mô hình không tự tin.
     - Những ảnh đạt tiêu chuẩn sẽ được gán nhãn giả.  
     - Ảnh có độ tin cậy thấp sẽ bị loại bỏ.  
     """)
@@ -130,13 +124,13 @@ def explain_Pseudo_Labelling():
     st.markdown("### 🏷️ **Bước 4: Gán nhãn giả cho các dự đoán tin cậy**")
     st.write("""
     - Các mẫu có độ tin cậy cao được gán nhãn theo kết quả dự đoán của mô hình.  
-    - ví dụ 500 được ảnh
+    - ví dụ có 500 ảnh được gán nhãn giả.
     """)
 
     st.markdown("### 📂 **Bước 5: Thêm dữ liệu gán nhãn giả vào tập train**")
     st.write("""
     - Tập train mới = dữ liệu ban đầu + các ảnh có nhãn giả.  
-    - Ví dụ: từ 100 ảnh có nhãn ban đầu, ta có thể mở rộng lên 600 ảnh sau khi thêm nhãn giả.  
+    - Ví dụ: từ 1000 ảnh có nhãn ban đầu, ta có thể mở rộng lên 1500 ảnh sau khi thêm nhãn giả.  
     """)
 
     st.markdown("### 🔄 **Bước 6: Huấn luyện lại mô hình với tập dữ liệu mở rộng**")
@@ -174,13 +168,12 @@ import mlflow.keras
 from tensorflow import keras
 from tensorflow.keras import layers
 from sklearn.model_selection import train_test_split, StratifiedKFold
-from mlflow.models.signature import infer_signature
 
 # Load dữ liệu MNIST
 def load_mnist_data():
-    mnist = fetch_openml('mnist_784', version=1, as_frame=False)
-    x, y = mnist.data, mnist.target.astype(np.uint8)
-    return x / 255.0, y  # Chuẩn hóa dữ liệu
+    X = np.load("X.npy")
+    y = np.load("y.npy")
+    return X, y
 
 def split_data():
     st.title("📌 Chia dữ liệu Train/Test")
@@ -222,7 +215,7 @@ def thi_nghiem():
 
     X_train, X_val, X_test = [st.session_state[k].reshape(-1, 28 * 28) / 255.0 for k in ["X_train", "X_val", "X_test"]]
     y_train, y_val, y_test = [st.session_state[k] for k in ["y_train", "y_val", "y_test"]]
-
+    st.title(f"Chọn tham số cho Neural Network ")
     k_folds = st.slider("Số fold cho Cross-Validation:", 3, 10, 5)
     num_layers = st.slider("Số lớp ẩn:", 1, 5, 2)
     num_neurons = st.slider("Số neuron mỗi lớp:", 32, 512, 128, 32)
@@ -230,6 +223,8 @@ def thi_nghiem():
     optimizer = st.selectbox("Optimizer:", ["adam", "sgd", "rmsprop"])
     epochs = st.slider("🕰 Số epochs:", min_value=1, max_value=50, value=20, step=1)
     learning_rate = st.slider("⚡ Tốc độ học (Learning Rate):", min_value=1e-5, max_value=1e-1, value=1e-3, step=1e-5, format="%.5f")
+    
+    st.title(f"Chọn tham số cho Pseudo Labelling ")
     labeled_ratio = st.slider("📊 Tỉ lệ dữ liệu có nhãn ban đầu (%):", min_value=1, max_value=20, value=1, step=1)
     max_iterations = st.slider("🔄 Số lần lặp tối đa của Pseudo-Labeling:", min_value=1, max_value=10, value=3, step=1)
     confidence_threshold = st.slider("✅ Ngưỡng tin cậy Pseudo Labeling (%):", min_value=50, max_value=99, value=95, step=1) / 100.0
@@ -240,7 +235,7 @@ def thi_nghiem():
 
     if st.button("🚀 Huấn luyện mô hình"):
         with st.spinner("Đang huấn luyện..."):
-            mlflow.start_run(run_name=run_name)
+            mlflow.start_run(run_name = run_name)
             mlflow.log_params({
                 "num_layers": num_layers,
                 "num_neurons": num_neurons,
@@ -327,20 +322,20 @@ def thi_nghiem():
                 X_unlabeled = X_unlabeled[~confident_mask]
 
                 # Đánh giá mô hình trên tập validation và test sau khi gán nhãn giả
-                val_loss, val_accuracy = model.evaluate(X_val, y_val, verbose=0)
+                #val_loss, val_accuracy = model.evaluate(X_val, y_val, verbose=0)
                 test_loss, test_accuracy = model.evaluate(X_test, y_test, verbose=0)
 
                 st.write(f"📢 **Vòng lặp {iteration+1}:**")
                 st.write(f"- Số pseudo labels mới thêm: {num_pseudo_added}")
                 st.write(f"- Tổng số pseudo labels: {total_pseudo_labels}")
                 st.write(f"- Số lượng dữ liệu chưa gán nhãn còn lại: {len(X_unlabeled)}")
-                st.write(f"- 🔥 **Độ chính xác trên tập validation:** {val_accuracy:.4f}")
+                # st.write(f"- 🔥 **Độ chính xác trên tập validation:** {val_accuracy:.4f}")
                 st.write(f"- 🚀 **Độ chính xác trên tập test:** {test_accuracy:.4f}")
                 st.write("---")
 
                 # Lưu độ chính xác vào MLflow để theo dõi
                 mlflow.log_metrics({
-                    f"val_accuracy_iter_{iteration+1}": val_accuracy,
+                    # f"val_accuracy_iter_{iteration+1}": val_accuracy,
                     f"test_accuracy_iter_{iteration+1}": test_accuracy
                 })
                 if len(X_unlabeled) == 0:
@@ -366,13 +361,11 @@ def thi_nghiem():
 
 import streamlit as st
 import numpy as np
-import joblib
 import random
 import pandas as pd
 import time
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
-from tensorflow.keras.models import load_model
 
 def preprocess_canvas_image(canvas_result):
     """Chuyển đổi ảnh từ canvas sang định dạng phù hợp để dự đoán."""
@@ -450,7 +443,7 @@ def show_experiment_selector():
     mlflow.set_tracking_uri("https://dagshub.com/huydfdcv/my-first-repo.mlflow")
     
     # Lấy danh sách tất cả experiments
-    experiment_name = "Neural_Network"
+    experiment_name = "MNIST Pseudo Labelling"
     experiments = mlflow.search_experiments()
     selected_experiment = next((exp for exp in experiments if exp.name == experiment_name), None)
 
@@ -541,8 +534,8 @@ def Neural_Network():
         os.environ["MLFLOW_TRACKING_PASSWORD"] = "2CaXhRNYabm9fN3"
         st.session_state.mlflow_initialized = True
         mlflow.set_tracking_uri(DAGSHUB_MLFLOW_URI)
-        mlflow.set_experiment("MNIST Pseudo Labelling")
-                
+
+        
     
     
     # Tạo các tab với tiêu đề tương ứng
