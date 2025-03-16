@@ -24,6 +24,7 @@ def load_mnist_data():
         y = f["y"][:]
     return X, y
 
+
 def split_data():
     st.title("📌 Chia dữ liệu Train/Test")
     
