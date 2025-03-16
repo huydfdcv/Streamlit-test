@@ -16,28 +16,20 @@ def display_clustering_info():
     - **Bước 3**: Cập nhật vị trí của các centroids bằng cách tính trung bình của tất cả các điểm trong cụm.
     - **Bước 4**: Lặp lại Bước 2 và Bước 3 cho đến khi các centroids không thay đổi hoặc đạt số lần lặp tối đa.
     """)
-    st.write("""
-    ### Công thức toán học của K-Means
 
-    1. **Hàm khoảng cách**: Để đo độ gần giữa các điểm, K-Means thường sử dụng khoảng cách Euclidean:
-
-    \[ d(x, y) = \sqrt{\sum_{i=1}^{n} (x_i - y_i)^2} \]
-
-    2. **Cập nhật cụm**: Gán mỗi điểm dữ liệu \( x_i \) vào cụm có tâm gần nhất:
-    
-    \[ C_j = \{ x_i \ | \ \arg\min_{j} d(x_i, \mu_j) \} \]
-
-    3. **Cập nhật tâm cụm**: Tâm cụm \( \mu_j \) được cập nhật bằng trung bình của các điểm trong cụm đó:
-    
-    \[ \mu_j = \frac{1}{|C_j|} \sum_{x_i \in C_j} x_i \]
-
-    4. **Hàm mục tiêu**: K-Means cố gắng tối thiểu hóa tổng bình phương khoảng cách từ các điểm đến tâm cụm:
-    
-    \[ J = \sum_{j=1}^{K} \sum_{x_i \in C_j} ||x_i - \mu_j||^2 \]
-
-    Thuật toán lặp lại cho đến khi \( J \) hội tụ hoặc thay đổi không đáng kể.
+    st.write("### Công thức toán học của K-Means")
+    st.latex(r"""
+    1. \text{Hàm khoảng cách: } d(x, y) = \sqrt{\sum_{i=1}^{n} (x_i - y_i)^2}
     """)
-
+    st.latex(r"""
+    2. \text{Cập nhật cụm: } C_j = \{ x_i \ | \ \arg\min_{j} d(x_i, \mu_j) \}
+    """)
+    st.latex(r"""
+    3. \text{Cập nhật tâm cụm: } \mu_j = \frac{1}{|C_j|} \sum_{x_i \in C_j} x_i
+    """)
+    st.latex(r"""
+    4. \text{Hàm mục tiêu: } J = \sum_{j=1}^{K} \sum_{x_i \in C_j} ||x_i - \mu_j||^2
+    """)
 
     st.write("### Ưu điểm")
     st.write("""
@@ -75,15 +67,21 @@ def display_clustering_info():
     - **Bước 4**: Lặp lại quá trình với các điểm lân cận của điểm lõi để mở rộng cụm.
     - **Bước 5**: Các điểm không thuộc bất kỳ cụm nào được coi là nhiễu (noise).
     """)
-    st.write("""
-    - Hai tham số chính:
-      - \( \varepsilon \) (epsilon): Bán kính để kiểm tra lân cận của một điểm.
-      - *MinPts*: Số điểm tối thiểu trong \( \varepsilon \) để tạo thành một cụm.
-    - Định nghĩa:
-      - Một điểm *core* nếu có ít nhất *MinPts* điểm trong \( \varepsilon \) của nó.
-      - Một điểm *border* nếu nằm trong \( \varepsilon \) của một core nhưng không đủ điểm để thành core.
-      - Một điểm *outlier* nếu không thuộc cụm nào.
-        """)
+
+    st.write("### Công thức toán học của DBSCAN")
+    st.latex(r"""
+    - \text{Tham số: } \varepsilon \text{ (epsilon), } MinPts
+    """)
+    st.latex(r"""
+    - \text{Điểm core: } N_\varepsilon(p) \geq MinPts
+    """)
+    st.latex(r"""
+    - \text{Điểm border: } N_\varepsilon(p) < MinPts \text{ nhưng thuộc } \varepsilon \text{-lân cận của một điểm core}
+    """)
+    st.latex(r"""
+    - \text{Điểm outlier: } \text{Không thuộc bất kỳ cụm nào}
+    """)
+
     st.write("### Ưu điểm")
     st.write("""
     - Không cần chỉ định số cụm trước.
