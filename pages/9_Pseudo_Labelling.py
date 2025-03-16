@@ -16,11 +16,14 @@ import time
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
 import os
-# Load dữ liệu MNIST
+import h5py
+
 def load_mnist_data():
-    X = np.load("X.npy")
-    y = np.load("y.npy")
+    with h5py.File("data.h5", "r") as f:
+        X = f["X"][:]
+        y = f["y"][:]
     return X, y
+
 
 def split_data():
     st.title("📌 Chia dữ liệu Train/Test")
