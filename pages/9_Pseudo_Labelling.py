@@ -52,6 +52,7 @@ def split_data():
         st.table(summary_df)
 
 def thi_nghiem():
+    num = 0
     if "X_train" not in st.session_state:
         st.error("⚠️ Chưa có dữ liệu! Hãy chia dữ liệu trước.")
         return
@@ -59,7 +60,8 @@ def thi_nghiem():
     # Chuẩn hóa dữ liệu, reshape về vector
     X_train, X_test = [st.session_state[k].reshape(-1, 28 * 28) / 255.0 for k in ["X_train", "X_test"]]
     y_train, y_test = [st.session_state[k] for k in ["y_train", "y_test"]]
-    st.title(f"Chọn tham số cho Neural Network ")
+    
+    st.title("Chọn tham số cho Neural Network") 
     k_folds = st.slider("Số fold cho Cross-Validation:", 3, 10, 5)
     num_layers = st.slider("Số lớp ẩn:", 1, 5, 2)
     num_neurons = st.slider("Số neuron mỗi lớp:", 32, 512, 128, 32)
