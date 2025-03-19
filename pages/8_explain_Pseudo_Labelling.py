@@ -88,3 +88,8 @@ def explain_Pseudo_Labelling():
     """)
 
 
+def main():
+    explain_Pseudo_Labelling()
+
+if __name__ == "__main__":
+    main()

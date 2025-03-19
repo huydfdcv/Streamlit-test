@@ -1,10 +1,9 @@
-import streamlit as st
+import streamlit as st 
 import numpy as np
 import mlflow
 import os
 import time
 from datetime import datetime
-import time
 import mlflow.keras
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -12,10 +11,8 @@ from sklearn.model_selection import train_test_split, StratifiedKFold
 from mlflow.models.signature import infer_signature
 import random
 import pandas as pd
-import time
 from PIL import Image
 from streamlit_drawable_canvas import st_canvas
-import os
 import h5py
 
 def load_mnist_data():
@@ -23,7 +20,6 @@ def load_mnist_data():
         X = f["X"][:]
         y = f["y"][:]
     return X, y
-
 
 def split_data():
     st.title("📌 Chia dữ liệu Train/Test")
@@ -34,7 +30,7 @@ def split_data():
     
     # Thanh kéo chọn số lượng ảnh để train
     num_samples = st.slider("📌 Chọn số lượng ảnh để huấn luyện:", 1000, total_samples, 10000)
-    num_samples =num_samples -10
+    num_samples =num_samples - 10
     # Thanh kéo chọn tỷ lệ Train/Test
     test_size = st.slider("📌 Chọn % dữ liệu Test", 10, 50, 20)
     train_size = 100 - test_size
@@ -56,11 +52,11 @@ def split_data():
         st.table(summary_df)
 
 def thi_nghiem():
-    num = 0
     if "X_train" not in st.session_state:
         st.error("⚠️ Chưa có dữ liệu! Hãy chia dữ liệu trước.")
         return
 
+    # Chuẩn hóa dữ liệu, reshape về vector
     X_train, X_test = [st.session_state[k].reshape(-1, 28 * 28) / 255.0 for k in ["X_train", "X_test"]]
     y_train, y_test = [st.session_state[k] for k in ["y_train", "y_test"]]
     st.title(f"Chọn tham số cho Neural Network ")
@@ -72,7 +68,7 @@ def thi_nghiem():
     epochs = st.slider("🕰 Số epochs:", min_value=1, max_value=50, value=20, step=1)
     learning_rate = st.slider("⚡ Tốc độ học (Learning Rate):", min_value=1e-5, max_value=1e-1, value=1e-3, step=1e-5, format="%.5f")
     
-    st.title(f"Chọn tham số cho Pseudo Labelling ")
+    st.title("Chọn tham số cho Pseudo Labelling")
     labeled_ratio = st.slider("📊 Tỉ lệ dữ liệu có nhãn ban đầu (%):", min_value=1, max_value=20, value=1, step=1)
     max_iterations = st.slider("🔄 Số lần lặp tối đa của Pseudo-Labeling:", min_value=1, max_value=10, value=3, step=1)
     confidence_threshold = st.slider("✅ Ngưỡng tin cậy Pseudo Labeling (%):", min_value=50, max_value=99, value=95, step=1) / 100.0
@@ -97,8 +93,15 @@ def thi_nghiem():
                 "confidence_threshold": confidence_threshold
             })
 
-            num_labeled = int(len(X_train) * labeled_ratio / 100)
-            labeled_idx = np.random.choice(len(X_train), num_labeled, replace=False)
+            # Chọn dữ liệu có nhãn ban đầu sao cho số mẫu mỗi lớp đều nhau
+            labeled_idx = []
+            unique_classes = np.unique(y_train)
+            for c in unique_classes:
+                class_indices = np.where(y_train == c)[0]
+                num_labeled_per_class = max(1, int(len(class_indices) * labeled_ratio / 100))
+                chosen_indices = np.random.choice(class_indices, num_labeled_per_class, replace=False)
+                labeled_idx.extend(chosen_indices)
+            labeled_idx = np.array(labeled_idx)
             unlabeled_idx = np.setdiff1d(np.arange(len(X_train)), labeled_idx)
 
             X_labeled, y_labeled = X_train[labeled_idx], y_train[labeled_idx]
@@ -113,8 +116,6 @@ def thi_nghiem():
                 training_status = st.empty()
 
                 num = 0
-                total_steps = k_folds * max_iterations
-
                 for fold_idx, (train_idx, val_idx) in enumerate(kf.split(X_labeled, y_labeled)):
                     X_k_train, X_k_val = X_labeled[train_idx], X_labeled[val_idx]
                     y_k_train, y_k_val = y_labeled[train_idx], y_labeled[val_idx]
@@ -144,7 +145,6 @@ def thi_nghiem():
                     losses.append(history.history["val_loss"][-1])
                     num += 1
                     progress_percent = int((num / k_folds) * 100)
-
                     training_progress.progress(progress_percent)
                     training_status.text(f"⏳ Đang huấn luyện... {progress_percent}%")
 
@@ -157,10 +157,15 @@ def thi_nghiem():
                     "elapsed_time": elapsed_time
                 })
 
+                # Gán nhãn giả cho dữ liệu chưa gán
                 pseudo_preds = model.predict(X_unlabeled)
                 pseudo_labels = np.argmax(pseudo_preds, axis=1)
                 confidence_scores = np.max(pseudo_preds, axis=1)
                 confident_mask = confidence_scores > confidence_threshold
+
+                # Lưu lại các mẫu được gán nhãn giả của vòng lặp này để hiển thị
+                pseudo_X_added = X_unlabeled[confident_mask]
+                pseudo_labels_added = pseudo_labels[confident_mask]
 
                 num_pseudo_added = np.sum(confident_mask)
                 total_pseudo_labels += num_pseudo_added
@@ -169,23 +174,25 @@ def thi_nghiem():
                 y_labeled = np.concatenate([y_labeled, pseudo_labels[confident_mask]])
                 X_unlabeled = X_unlabeled[~confident_mask]
 
-                # Đánh giá mô hình trên tập validation và test sau khi gán nhãn giả
-                #val_loss, val_accuracy = model.evaluate(X_val, y_val, verbose=0)
-                test_loss, test_accuracy = model.evaluate(X_test, y_test, verbose=0)
-
                 st.write(f"📢 **Vòng lặp {iteration+1}:**")
                 st.write(f"- Số pseudo labels mới thêm: {num_pseudo_added}")
                 st.write(f"- Tổng số pseudo labels: {total_pseudo_labels}")
                 st.write(f"- Số lượng dữ liệu chưa gán nhãn còn lại: {len(X_unlabeled)}")
-                # st.write(f"- 🔥 **Độ chính xác trên tập validation:** {val_accuracy:.4f}")
+                test_loss, test_accuracy = model.evaluate(X_test, y_test, verbose=0)
                 st.write(f"- 🚀 **Độ chính xác trên tập test:** {test_accuracy:.4f}")
-                st.write("---")
 
-                # Lưu độ chính xác vào MLflow để theo dõi
-                mlflow.log_metrics({
-                    # f"val_accuracy_iter_{iteration+1}": val_accuracy,
-                    f"test_accuracy_iter_{iteration+1}": test_accuracy
-                })
+                # Minh họa các mẫu được gán nhãn giả (hiển thị tối đa 9 ảnh)
+                if num_pseudo_added > 0:
+                    pseudo_images = []
+                    pseudo_captions = []
+                    for i in range(min(num_pseudo_added, 9)):
+                        img = (pseudo_X_added[i].reshape(28, 28) * 255).astype(np.uint8)
+                        pseudo_images.append(img)
+                        pseudo_captions.append(f"Pseudo: {pseudo_labels_added[i]}")
+                    st.image(pseudo_images, caption=pseudo_captions, width=100)
+
+                st.write("---")
+                mlflow.log_metrics({ f"test_accuracy_iter_{iteration+1}": test_accuracy })
                 if len(X_unlabeled) == 0:
                     break
 
@@ -196,11 +203,12 @@ def thi_nghiem():
             training_progress.progress(100)
             training_status.text("✅ Huấn luyện hoàn tất!")
 
-            st.success(f"✅ Huấn luyện hoàn tất!")
+            st.success("✅ Huấn luyện hoàn tất!")
             st.write(f"📊 **Độ chính xác trung bình trên tập validation:** {avg_val_accuracy:.4f}")
             st.write(f"📊 **Độ chính xác trên tập test:** {test_accuracy:.4f}")
             st.success(f"✅ Đã log dữ liệu cho **{st.session_state['run_name']}** trong MLflow! 🚀")
             st.markdown(f"🔗 [Truy cập MLflow UI]({st.session_state['mlflow_url']})")
+
 def preprocess_canvas_image(canvas_result):
     """Chuyển đổi ảnh từ canvas sang định dạng phù hợp để dự đoán."""
     if canvas_result.image_data is None:
@@ -220,7 +228,7 @@ def du_doan():
         st.success("✅ Đã sử dụng mô hình vừa huấn luyện!")
     else:
         st.error("⚠️ Chưa có mô hình! Hãy huấn luyện trước.")
-
+        return
 
     # 🆕 Cập nhật key cho canvas khi nhấn "Tải lại"
     if "key_value" not in st.session_state:
@@ -260,13 +268,10 @@ def du_doan():
             prob_df = pd.DataFrame(prediction.reshape(1, -1), columns=[str(i) for i in range(10)]).T
             prob_df.columns = ["Mức độ tin cậy"]
             st.bar_chart(prob_df)
-
         else:
             st.error("⚠️ Hãy vẽ một số trước khi bấm Dự đoán!")
 
-    
 from datetime import datetime    
-import streamlit as st
 import mlflow
 from datetime import datetime
 
@@ -304,10 +309,9 @@ def show_experiment_selector():
     for _, run in runs.iterrows():
         run_id = run["run_id"]
         run_tags = mlflow.get_run(run_id).data.tags
-        run_name = run_tags.get("mlflow.runName", f"Run {run_id[:8]}")  # Lấy từ tags
+        run_name = run_tags.get("mlflow.runName", f"Run {run_id[:8]}")
         run_info.append((run_name, run_id))
     
-    # Tạo dictionary để map run_name -> run_id
     run_name_to_id = dict(run_info)
     run_names = list(run_name_to_id.keys())
     
@@ -323,7 +327,7 @@ def show_experiment_selector():
         st.write(f"**Run ID:** {selected_run_id}")
         st.write(f"**Trạng thái:** {selected_run.info.status}")
         
-        start_time_ms = selected_run.info.start_time  # Thời gian lưu dưới dạng milliseconds
+        start_time_ms = selected_run.info.start_time
         if start_time_ms:
             start_time = datetime.fromtimestamp(start_time_ms / 1000).strftime("%Y-%m-%d %H:%M:%S")
         else:
@@ -331,7 +335,6 @@ def show_experiment_selector():
         
         st.write(f"**Thời gian chạy:** {start_time}")
 
-        # Hiển thị thông số đã log
         params = selected_run.data.params
         metrics = selected_run.data.metrics
 
@@ -343,7 +346,6 @@ def show_experiment_selector():
             st.write("### 📊 Metrics:")
             st.json(metrics)
 
-        # Kiểm tra và hiển thị dataset artifact
         dataset_path = f"{selected_experiment.artifact_location}/{selected_run_id}/artifacts/dataset.npy"
         st.write("### 📂 Dataset:")
         st.write(f"📥 [Tải dataset]({dataset_path})")
@@ -351,11 +353,9 @@ def show_experiment_selector():
         st.warning("⚠ Không tìm thấy thông tin cho run này.")
 
 def Neural_Network():
-    #st.title("🚀 MLflow DAGsHub Tracking với Streamlit")
-    
     if "mlflow_initialized" not in st.session_state:   
         DAGSHUB_MLFLOW_URI = "https://dagshub.com/huydfdcv/my-first-repo.mlflow"
-        st.session_state['mlflow_url']=DAGSHUB_MLFLOW_URI
+        st.session_state['mlflow_url'] = DAGSHUB_MLFLOW_URI
         mlflow.set_tracking_uri(DAGSHUB_MLFLOW_URI)
 
         os.environ["MLFLOW_TRACKING_USERNAME"] = "huydfdcv"
@@ -363,16 +363,12 @@ def Neural_Network():
         st.session_state.mlflow_initialized = True
         mlflow.set_experiment("MNIST Pseudo Labelling")   
         
-    
-    
-    # Tạo các tab với tiêu đề tương ứng
     tab1, tab2, tab3 = st.tabs([
         "🧠 Huấn luyện",
         "🖥️ DEMO",
         "🔥 MLflow"
     ])
 
-    # Nội dung từng tab
     with tab1:
         st.title("🧠 Huấn luyện Neural Network trên MNIST")
         split_data()
